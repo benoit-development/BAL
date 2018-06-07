@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Boîtes aux lettres</string>
+    <string name="title_activity_main">Boîtes aux lettres</string>
+    <string name="update">Envoyer</string>
+    <string name="cancel">Annuler</string>
+    <string name="error_retrieving_bal_list">Une erreur s\'est produite lors de la récupération des boîtes aux lettres</string>
+    <string name="request_sent">Nouvel emplacement sauvé</string>
+    <string name="error_sending_request">Une erreur est survenue lors de l\'envoi de la demande</string>
+    <string name="error_displaying_update_form">Une erreur est survenue lors de l\'affichage du formulaire de mise à jour</string>
+    <string name="error_displaying_add_form">Une erreur est survenue lors de l\'affichage du formulaire d\'ajout</string>
+    <string name="you_moved_a_mailbox_description">Vous avez déplacé une boîte aux lettre. Vous pouvez toujours modifier le nouvel emplacement avant de valider (marqueur vert).</string>
+    <string name="comment">Commentaire</string>
+    <string name="current_location">Emplacement actuel</string>
+    <string name="new_location">Nouvel emplacement</string>
+    <string name="send">Envoyer</string>
+    <string name="change_locally">Sauver le changement sur cet appareil</string>
+    <string name="change_server">Partager ce changement</string>
+    <string name="share">Share</string>
+    <string name="share_bal_text">Adresse : %1$s\n\nLatitude : %2$s\nLongitude : %3$s\n\nLien Google Maps : http://maps.google.com/maps?&amp;z=%4$d&amp;t=%5$s&amp;q=%2$s+%3$s</string>
+    <string name="search">Chercher</string>
+    <string name="address">Addresse</string>
+    <string name="postal_code">Code Postal</string>
+    <string name="town">Ville</string>
+    <string name="adding_new_bal">Ajout d\'une nouvelle boîte aux lettres</string>
+    <string name="new_bal">Nouvelle boîte aux lettres</string>
+    <string name="street_number">Numéro de rue</string>
+    <string name="street_name">Nom de la voie</string>
+    <string name="delete">Supprimer</string>
+</resources>

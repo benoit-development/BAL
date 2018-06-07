@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Mailboxes in France</string>
+    <string name="title_activity_main">Mailboxes in France</string>
+    <string name="update">Send</string>
+    <string name="cancel">Cancel</string>
+    <string name="error_retrieving_bal_list">Error while retrieving mailboxes</string>
+    <string name="request_sent">New location saved</string>
+    <string name="error_sending_request">An error occurred while sending request</string>
+    <string name="error_displaying_update_form">An error occurred while launching update form</string>
+    <string name="error_displaying_add_form">An error occurred while launching add form</string>
+    <string name="you_moved_a_mailbox_description">You moved a mailbox. You still can modify the new location before submitting (green marker).</string>
+    <string name="comment">Comment</string>
+    <string name="current_location">Current location</string>
+    <string name="new_location">New location</string>
+    <string name="send">Send</string>
+    <string name="change_locally">Save change on this device</string>
+    <string name="change_server">Share the location change</string>
+    <string name="share">Share</string>
+    <string name="share_bal_text">Mailbox address : %1$s\n\nLatitude : %2$s\nLongitude : %3$s\n\nGoogle Maps : http://maps.google.com/maps?&amp;z=%4$d&amp;t=%5$s&amp;q=%2$s+%3$s</string>
+    <string name="search">Search</string>
+    <string name="address">Address</string>
+    <string name="postal_code">Postal Code</string>
+    <string name="town">Town</string>
+    <string name="adding_new_bal">Adding a new Mailbox</string>
+    <string name="new_bal">New Mailbox</string>
+    <string name="street_number">Street Number</string>
+    <string name="street_name">Street Name</string>
+    <string name="delete">Delete</string>
+</resources>
