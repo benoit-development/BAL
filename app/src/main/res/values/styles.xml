@@ -4,7 +4,7 @@
 
     <!-- Base application theme. -->
     <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
-        <item name="colorPrimary">@color/laposte</item>
+        <item name="colorPrimary">@color/la_poste</item>
     </style>
 
 
