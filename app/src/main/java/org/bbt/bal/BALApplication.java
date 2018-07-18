@@ -8,8 +8,13 @@ import android.app.Application;
 public class BALApplication extends Application {
 
     /**
-     * Tag for log
+     * {@link BALApplication} instance
      */
-    private static final String TAG = "BalApplication";
+    public static BALApplication applicationInstance;
 
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        applicationInstance = this;
+    }
 }

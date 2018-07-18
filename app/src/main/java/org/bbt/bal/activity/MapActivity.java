@@ -1,83 +1,75 @@
 package org.bbt.bal.activity;
 
 import android.Manifest;
-import android.app.SearchManager;
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
-import android.database.MatrixCursor;
-import android.location.Address;
-import android.location.Geocoder;
 import android.location.Location;
-import android.os.AsyncTask;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.net.Uri;
 import android.os.Bundle;
-import android.provider.BaseColumns;
+import android.os.Environment;
+import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.content.ContextCompat;
-import android.support.v4.widget.CursorAdapter;
-import android.support.v4.widget.SimpleCursorAdapter;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.SearchView;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
-import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
-import com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
+import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.maps.CameraUpdateFactory;
-import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
-import com.google.android.gms.maps.model.CameraPosition;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.Marker;
-import com.google.android.gms.maps.model.MarkerOptions;
 
 import org.bbt.bal.R;
 import org.bbt.bal.tools.Bal;
+import org.bbt.bal.tools.Tools;
+import org.osmdroid.api.IMapController;
+import org.osmdroid.config.Configuration;
+import org.osmdroid.events.DelayedMapListener;
+import org.osmdroid.events.MapListener;
+import org.osmdroid.events.ScrollEvent;
+import org.osmdroid.events.ZoomEvent;
+import org.osmdroid.library.BuildConfig;
+import org.osmdroid.util.GeoPoint;
+import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.Marker;
+import org.osmdroid.views.overlay.infowindow.InfoWindow;
 
-import java.io.IOException;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
+import java.io.File;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class MapActivity extends AppCompatActivity implements ConnectionCallbacks, OnConnectionFailedListener {
+public class MapActivity extends AppCompatActivity {
 
     /**
      * Log TAG
      */
     private static final String TAG = "map_activity";
-    /**
-     * Default map type
-     */
-    private static final int DEFAULT_MAP_TYPE = GoogleMap.MAP_TYPE_NORMAL;
 
     /**
      * permission request
      */
-    private static final int MY_PERMISSIONS_REQUEST_LOCATION = 0;
+    private static final int MY_PERMISSIONS_REQUEST = 0;
 
     /**
      * Paris latitude
      */
-    private static final double PARIS_LATITUDE =  48.856638;
+    private static final double PARIS_LATITUDE = 48.856638;
 
     /**
      * Paris longitude
@@ -85,19 +77,9 @@ public class MapActivity extends AppCompatActivity implements ConnectionCallback
     private static final double PARIS_LONGITUDE = 2.352241;
 
     /**
-     * Instance of the map
+     * Default zoom level
      */
-    private GoogleMap mMap; // Might be null if Google Play services APK is not available.
-
-    /**
-     * Instance of Google API Client
-     */
-    private GoogleApiClient mGoogleApiClient;
-
-    /**
-     * List of current markers displayed on map
-     */
-    Map<String, Marker> markerList = new ConcurrentHashMap<String, Marker>();
+    private static final double DEFAULT_ZOOM = 14;
 
     /**
      * Instance of an AsyncTask updating
@@ -107,186 +89,87 @@ public class MapActivity extends AppCompatActivity implements ConnectionCallback
     /**
      * latitude at the start of the activity
      */
-    private double currentLatitude = Integer.MIN_VALUE;
+    private double currentLatitude = PARIS_LATITUDE;
 
     /**
      * longitude à the start of the activity
      */
-    private double currentLongitude = Integer.MIN_VALUE;
+    private double currentLongitude = PARIS_LONGITUDE;
 
     /**
      * Current selected Bal
      */
-    private Bal selectedBal;
+    private String selectedBalId = "";
 
     /**
-     * current map type selected
+     * View displaying map
      */
-    private int currentMapType = DEFAULT_MAP_TYPE;
+    private MapView mapView;
 
     /**
-     * button to change map type
+     * current zoom level on map view
      */
-    private ImageButton mapTypeButton;
+    private double currentZoom = DEFAULT_ZOOM;
 
     /**
-     * ShareMenuItem
+     * Marker of the current location device
      */
-    private MenuItem shareMenuItem;
+    private Marker myLocationMarker;
 
     /**
-     * Waiting for device location to go this location
+     * Boolean defining if system should change camera position to current device location
      */
-    private boolean waitingForMyLocation = false;
+    private boolean shouldAppMoveCameraPosition = true;
 
     /**
-     * Geocoder used for searches
+     * Client to get last known location
      */
-    private Geocoder gc;
+    private FusedLocationProviderClient mFusedLocationClient;
 
     /**
-     * Adapter for search suggestions
+     * Current device location
      */
-    private CursorAdapter searchAdapter;
+    private Location currentDeviceLocation;
 
     /**
-     * Asynctask making search
+     * {@link MapView} controller
      */
-    private AsyncTask<String, Void, Cursor> searchTask;
+    private IMapController mapController;
 
     /**
-     * Currently displaed suggestions
+     * default inactivity before reloading bal markers
      */
-    private MatrixCursor suggestions;
+    private static final int DEFAULT_INACTIVITY_DELAY_IN_MILLISECS = 200;
 
     /**
-     * Menu item to delete de Bal (only for local bal)
+     * Marker list on map
      */
-    private MenuItem deleteMenuItem;
+    private ConcurrentHashMap<String, Marker> markerList = new ConcurrentHashMap<>();
+
+    /**
+     * Current bal list identified with bal ID
+     */
+    private Map<String, Bal> balList;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_map);
-
-        gc = new Geocoder(this);
-        setUpMapIfNeeded();
 
         if (savedInstanceState != null) {
-            selectedBal = (Bal) savedInstanceState.getParcelable("selectedBal");
-            currentLatitude = savedInstanceState.getDouble("currentLatitude", Integer.MIN_VALUE);
-            currentLongitude = savedInstanceState.getDouble("currentLongitude", Integer.MIN_VALUE);
-            currentMapType = savedInstanceState.getInt("currentMapType", DEFAULT_MAP_TYPE);
-
-            if ((currentLatitude != Integer.MIN_VALUE) && (currentLongitude != Integer.MIN_VALUE)) {
-                updateBalMarkers(currentLatitude, currentLongitude);
-            }
+            selectedBalId = savedInstanceState.getString("selectedBalId", "");
+            currentLatitude = savedInstanceState.getDouble("currentLatitude", PARIS_LATITUDE);
+            currentLongitude = savedInstanceState.getDouble("currentLongitude", PARIS_LONGITUDE);
+            currentDeviceLocation = savedInstanceState.getParcelable("currentDeviceLocation");
+            currentZoom = savedInstanceState.getDouble("currentZoom", DEFAULT_ZOOM);
+            shouldAppMoveCameraPosition = savedInstanceState.getBoolean("shouldAppMoveCameraPosition", true);
         }
 
-        buildGoogleApiClient();
+        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
-        mapTypeButton = (ImageButton) findViewById(R.id.map_type);
-        mapTypeButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (mMap != null) {
-                    Log.d(TAG, "Toggling map type");
-                    toggleMapType();
-                }
-            }
-        });
-
-        searchAdapter = new SimpleCursorAdapter(this,
-                R.layout.search_suggestion,
-                null,
-                new String[] {"label1", "label2"},
-                new int[] {android.R.id.text1, android.R.id.text2},
-                CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER);
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-
-        setUpMapIfNeeded();
-        if (mGoogleApiClient != null) {
-            mGoogleApiClient.connect();
-        }
-        updateMapType();
-
-        checkPermission(true);
-        updateBalMarkers();
-    }
-
-    /**
-     * Check/ask location permission if not active
-     *
-     * @return true if permission requested
-     */
-    private boolean checkPermission(boolean testShouldShowRequestPermissionRationale) {
-        // Here, thisActivity is the current activity
-        if (ContextCompat.checkSelfPermission(this,
-                Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-
-            Log.d(TAG, "Location permission not granted");
-
-            // Should we show an explanation?
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-                    Manifest.permission.ACCESS_FINE_LOCATION) && testShouldShowRequestPermissionRationale) {
-
-                // Show an explanation to the user *asynchronously* -- don't block
-                // this thread waiting for the user's response! After the user
-                // sees the explanation, try again to request the permission.
-                Log.d(TAG, "We can't rationally ask for permission");
-
-            } else {
-
-                // No explanation needed, we can request the permission.
-                Log.d(TAG, "Asking for permission");
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                        MY_PERMISSIONS_REQUEST_LOCATION);
-
-                // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
-                // app-defined int constant. The callback method gets the
-                // result of the request.
-
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           String permissions[], int[] grantResults) {
-        switch (requestCode) {
-            case MY_PERMISSIONS_REQUEST_LOCATION: {
-                // If request is cancelled, the result arrays are empty.
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-
-                    // permission was granted, yay! Do the
-                    // location-related task you need to do.
-                    // go to current device location
-                    Log.d(TAG, "Permission has been granted");
-                    waitingForMyLocation = true;
-
-
-                } else {
-
-                    // permission denied, boo! Disable the
-                    // functionality that depends on this permission.
-                    Log.d(TAG, "Permission not granted :(");
-
-                }
-                return;
-            }
-
-            // other 'case' lines to check for other
-            // permissions this app might request
+        //handle permissions first, before map is created. not depicted here
+        if (checkPermission()) {
+            setUpMap();
         }
     }
 
@@ -294,154 +177,182 @@ public class MapActivity extends AppCompatActivity implements ConnectionCallback
     protected void onPause() {
         super.onPause();
 
-        if ((mGoogleApiClient != null) && (mGoogleApiClient.isConnected())) {
-            mGoogleApiClient.disconnect();
+        if (mapView != null) {
+            mapView.onPause();
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (checkPermission() && (mapView != null)) {
+            mapView.onResume();
+            markerList.clear();
+            moveToMyLocation(false);
+            updateMapStyle();
+            updateBalMarkers(currentLatitude, currentLongitude);
+            if (currentDeviceLocation != null) {
+                updateCurrentPositionMarker(currentDeviceLocation);
+            }
+        }
+    }
+
+    /**
+     * Move camera to device location and update displayed bal.
+     * Moving to device location can be forced for example when user click on "go to my location" button.
+     *
+     * @param force force moving
+     */
+    private void moveToMyLocation(boolean force) {
+
+        if ((currentDeviceLocation != null) && (mapView != null)) {
+            Log.d(TAG, "current device location available");
+
+            if (shouldAppMoveCameraPosition || force) {
+                moveToLocation(currentDeviceLocation.getLatitude(), currentDeviceLocation.getLongitude());
+                shouldAppMoveCameraPosition = false;
+            }
+
+        } else if (mapView != null) {
+            Log.d(TAG, "No current device location available. Trying to get one from last known location");
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                checkPermission();
+                return;
+            }
+            mFusedLocationClient.getLastLocation()
+                    .addOnSuccessListener(this, (Location location) -> {
+                        // Got last known location. In some rare situations this can be null.
+                        if (location != null) {
+                            Log.d(TAG, "Last known location found : " + location.getLatitude() + ", " + location.getLongitude());
+                            updateCurrentPositionMarker(location);
+                            if (shouldAppMoveCameraPosition || force) {
+                                moveToMyLocation(false);
+                                shouldAppMoveCameraPosition = false;
+                            }
+                        }
+                    });
+        }
+    }
+
+    /**
+     * Update device current position marker on map
+     *
+     * @param location new device location
+     */
+    private void updateCurrentPositionMarker(Location location) {
+        currentDeviceLocation = location;
+        if (myLocationMarker != null) {
+            myLocationMarker.setPosition(new GeoPoint(currentDeviceLocation));
+        }
+    }
+
+
+    /**
+     * Check/ask location permission if not active
+     */
+    private boolean checkPermission() {
+        if ((ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+                || (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)) {
+
+            Log.d(TAG, "Location permission not granted");
+
+            // No explanation needed, we can request the permission.
+            Log.d(TAG, "Asking for permission");
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                    MY_PERMISSIONS_REQUEST);
+
+            return false;
+
+        } else {
+            // Permission granted
+            locationPermissionGranted();
+            setUpMap();
+            return true;
+        }
+    }
+
+    /**
+     * Add device location listener when Location permission is granted
+     */
+    private void locationPermissionGranted() {
+        // Acquire a reference to the system Location Manager
+        LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+        if (locationManager == null) {
+            Log.d(TAG, "Location Manager is null. No possibility to find device location");
+            return;
+        }
+
+        // Define a listener that responds to location updates
+        LocationListener locationListener = new LocationListener() {
+            public void onLocationChanged(Location location) {
+                // Called when a new location is found by the network location provider.
+                Log.d(TAG, "Device location changed : " + location.getLatitude() + "/" + location.getLongitude());
+                moveToMyLocation(false);
+                updateCurrentPositionMarker(location);
+            }
+
+            public void onStatusChanged(String provider, int status, Bundle extras) {
+            }
+
+            public void onProviderEnabled(String provider) {
+            }
+
+            public void onProviderDisabled(String provider) {
+            }
+        };
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            checkPermission();
+            return;
+        }
+        // Register the listener with the Location Manager to receive location update
+        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListener);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case MY_PERMISSIONS_REQUEST: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
+
+                    // permission was granted, yay! Do the
+                    // go to current device location
+                    Log.d(TAG, "Permission has been granted");
+                    setUpMap();
+                    locationPermissionGranted();
+
+                } else {
+
+                    // permission denied, boo! Disable the
+                    // functionality that depends on this permission.
+                    Log.d(TAG, "Permission not granted :(");
+                    checkPermission();
+                }
+            }
         }
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-
         getMenuInflater().inflate(R.menu.menu_map, menu);
-        shareMenuItem = menu.findItem(R.id.action_share);
-        deleteMenuItem = menu.findItem(R.id.action_delete);
-        // display only if a bal is selected
-        shareMenuItem.setVisible(selectedBal != null);
-        deleteMenuItem.setVisible((selectedBal != null) && (selectedBal.isLocal()));
-
-        SearchManager manager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
-        SearchView search = (SearchView) menu.findItem(R.id.search).getActionView();
-        search.setSearchableInfo(manager.getSearchableInfo(getComponentName()));
-        search.setSuggestionsAdapter(searchAdapter);
-        search.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String query) {
-                return false;
-            }
-
-            @Override
-            public boolean onQueryTextChange(String newText) {
-                if (newText.length() >= 3) {
-                    Log.i(TAG, "search request : " + newText);
-                    requestSuggestion(newText);
-                }
-                return false;
-            }
-        });
-        search.setOnSuggestionListener(new SearchView.OnSuggestionListener() {
-            @Override
-            public boolean onSuggestionSelect(int position) {
-                goToSelectedPosition(position);
-                return false;
-            }
-
-            @Override
-            public boolean onSuggestionClick(int position) {
-                goToSelectedPosition(position);
-                return false;
-            }
-
-            /**
-             * Move map to the selected position
-             * @param position
-             */
-            private void goToSelectedPosition(int position) {
-                Log.d(TAG, "Go to selected suggestion : " + position);
-                if (suggestions.getCount() > position) {
-                    suggestions.moveToPosition(position);
-                    moveToLocation(suggestions.getDouble(suggestions.getColumnIndex("latitude")), suggestions.getDouble(suggestions.getColumnIndex("longitude")));
-                }
-            }
-        });
-
         return super.onCreateOptionsMenu(menu);
-    }
-
-    /**
-     * Request a new search
-     *
-     * @param newText
-     */
-    private void requestSuggestion(String newText) {
-
-        // cancel potential search in progress
-        if (searchTask != null) {
-            searchTask.cancel(true);
-        }
-
-        searchTask = new AsyncTask<String, Void, Cursor>() {
-
-            @Override
-            protected Cursor doInBackground(String... params) {
-                MatrixCursor c = new MatrixCursor(new String[]{ BaseColumns._ID, "label1", "label2", "latitude", "longitude" });
-                List<Address> list = null;
-                try {
-                    list = gc.getFromLocationName(params[0], 10);
-                    Log.i(TAG, list.size() + " result(s) found : " + params[0]);
-                    String result = "";
-                    int i=0;
-                    for (Address address : list) {
-                        int maxIndex = address.getMaxAddressLineIndex();
-                        if (address.hasLongitude() && address.hasLatitude() && (maxIndex > -1)) {
-                            String label1 = "";
-                            String label2 = "";
-                            for (int j=0; j<=maxIndex; j++) {
-                                if (j == 0) {
-                                    label1 += address.getAddressLine(j);
-                                } else {
-                                    label2 += address.getAddressLine(j);
-                                    if (j < maxIndex) {
-                                        label2 += "\n";
-                                    }
-                                }
-                            }
-                            c.addRow(new Object[] {i++, label1, label2, address.getLatitude(), address.getLongitude()});
-                            suggestions = c;
-                        }
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                return c;
-            }
-
-            @Override
-            protected void onPostExecute(Cursor cursor) {
-                super.onPostExecute(cursor);
-                searchAdapter.changeCursor(cursor);
-            }
-        };
-
-        searchTask.execute(newText);
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-            case R.id.action_share:
-                Log.d(TAG, "Sharing bal : " + selectedBal.toString());
-                // creating intent
-                Intent sendIntent = new Intent();
-                sendIntent.setAction(Intent.ACTION_SEND);
-                // define map type
-                String mapType = "m";
-                if (mMap.getMapType() == GoogleMap.MAP_TYPE_HYBRID) {
-                    mapType = "h";
-                }
-                sendIntent.putExtra(Intent.EXTRA_SUBJECT, getString(R.string.app_name) + " : " + selectedBal.getCompleteAddress());
-                sendIntent.putExtra(Intent.EXTRA_TEXT, getString(R.string.share_bal_text, selectedBal.getCompleteAddress(), String.format(Locale.US, "%f", selectedBal.latitude), String.format(Locale.US, "%f", selectedBal.longitude), ((int) mMap.getCameraPosition().zoom), mapType));
-                sendIntent.setType("text/html");
-                startActivity(sendIntent);
+            case R.id.action_map_layer:
+                Log.d(TAG, "Display AlertDialog to choose map type");
+
+                DialogFragment newFragment = new MapTypeDialogFragment();
+                newFragment.show(getSupportFragmentManager(), "missiles");
+
                 return true;
-            case R.id.action_delete:
-                if (selectedBal != null) {
-                    Bal.deleteBalFromSharedPreferences(this, selectedBal);
-                    markerList.get(selectedBal.id).remove();
-                    markerList.remove(selectedBal.id);
-                    selectedBal = null;
-                    shareMenuItem.setVisible(false);
-                    deleteMenuItem.setVisible(false);
-                }
+            case R.id.action_my_location:
+                Log.d(TAG, "My Location requested");
+                moveToMyLocation(true);
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -450,212 +361,84 @@ public class MapActivity extends AppCompatActivity implements ConnectionCallback
     }
 
     /**
-     * Sets up the map if it is possible to do so (i.e., the Google Play services APK is correctly
-     * installed)
+     * update map and image of the map style button
      */
-    private void setUpMapIfNeeded() {
-        // Do a null check to confirm that we have not already instantiated the map.
-        if (mMap == null) {
-            // Try to obtain the map from the SupportMapFragment.
-            mMap = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map))
-                    .getMap();
-            // Check if we were successful in obtaining the map.
-            if (mMap != null) {
-                setUpMap();
-            }
-        }
-    }
-
-    /**
-     * toggle map type between normal and hybrid
-     */
-    private void toggleMapType() {
-        switch (currentMapType) {
-            case GoogleMap.MAP_TYPE_HYBRID:
-                Log.d(TAG, "new map type is normal");
-                currentMapType = GoogleMap.MAP_TYPE_NORMAL;
-                break;
-            default:
-                Log.d(TAG, "new map type is hybrid");
-                currentMapType = GoogleMap.MAP_TYPE_HYBRID;
-                break;
-        }
-        updateMapType();
-    }
-
-    /**
-     * update map and image of the map type button
-     */
-    private void updateMapType() {
-        Log.d(TAG, "Updating map type");
-        switch (currentMapType) {
-            case GoogleMap.MAP_TYPE_HYBRID:
-                mapTypeButton.setImageResource(R.drawable.map_type_plan);
-                break;
-            default:
-                mapTypeButton.setImageResource(R.drawable.map_type_hybrid);
-                break;
-        }
-        if (mMap != null) {
-            mMap.setMapType(currentMapType);
-        }
+    private void updateMapStyle() {
+        mapView.setTileSource(Tools.getCurrentMapTypeTileSource());
     }
 
     /**
      * This is where we can add markers or lines, add listeners or move the camera.
      * <p/>
-     * This should only be called once and when we are sure that {@link #mMap} is not null.
+     * This should only be called once and when we are sure that {@link #mapView} is not null.
      */
     private void setUpMap() {
-        mMap.setMyLocationEnabled(true);
-        mMap.getUiSettings().setMapToolbarEnabled(true);
-        mMap.getUiSettings().setZoomControlsEnabled(true);
-        mMap.setOnCameraChangeListener(new GoogleMap.OnCameraChangeListener() {
+
+        //load/initialize the osmdroid configuration, this can be done
+        Context ctx = getApplicationContext();
+        Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx));
+        Configuration.getInstance().setUserAgentValue(BuildConfig.APPLICATION_ID);
+        Configuration.getInstance().setOsmdroidBasePath(new File(Environment.getExternalStorageDirectory(), "osmdroid"));
+        Configuration.getInstance().setOsmdroidTileCache(new File(Environment.getExternalStorageDirectory(), "osmdroid/tiles"));
+
+        // inflate activity layout
+        setContentView(R.layout.activity_map);
+
+        // setup map
+        mapView = findViewById(R.id.mapView);
+        updateMapStyle();
+        mapView.setBuiltInZoomControls(false);
+        mapView.setMultiTouchControls(true);
+        mapView.setTilesScaledToDpi(true);
+
+        // init controls
+        mapController = mapView.getController();
+        mapController.setZoom(currentZoom);
+        mapController.setCenter(new GeoPoint(currentLatitude, currentLongitude));
+
+        // listener to update displayed mailboxes
+        mapView.addMapListener(new DelayedMapListener(new MapListener() {
 
             double previousLatitude = 0;
             double previousLongitude = 0;
 
             @Override
-            public void onCameraChange(CameraPosition cameraPosition) {
-                currentLatitude = cameraPosition.target.latitude;
-                currentLongitude = cameraPosition.target.longitude;
+            public boolean onScroll(ScrollEvent event) {
+
+                shouldAppMoveCameraPosition = false;
+
+                currentLatitude = mapView.getMapCenter().getLatitude();
+                currentLongitude = mapView.getMapCenter().getLongitude();
+
+                Log.d(TAG, "Map position moved to : " + currentLatitude + "/" + currentLongitude);
                 if ((currentLatitude != previousLatitude) && (currentLongitude != previousLongitude)) {
                     previousLatitude = currentLatitude;
                     previousLongitude = currentLongitude;
                     updateBalMarkers(currentLatitude, currentLongitude);
                 }
-            }
-        });
-        mMap.setOnMyLocationButtonClickListener(new GoogleMap.OnMyLocationButtonClickListener() {
-            @Override
-            public boolean onMyLocationButtonClick() {
-                return checkPermission(false);
-            }
-        });
-        mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
-            @Override
-            public boolean onMarkerClick(Marker marker) {
-                Log.d(TAG, "Click on marker : " + marker.getPosition().latitude + ", " + marker.getPosition().longitude);
-                updateBalMarkers(marker.getPosition().latitude, marker.getPosition().longitude);
-                selectedBal = new Bal(marker.getTitle());
-                shareMenuItem.setVisible(true);
-                deleteMenuItem.setVisible(selectedBal.isLocal());
                 return false;
             }
-        });
-        mMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
-            @Override
-            public void onMapLongClick(LatLng latLng) {
-                Log.d(TAG, "Request add on this location : " + latLng.latitude + ", " + latLng.longitude);
-
-                // start activity to request an add
-                Intent intent = new Intent(MapActivity.this, AddBalActivity.class);
-                intent.putExtra(UpdateBalActivity.INTENT_EXTRA_NEW_LOCATION, latLng);
-                intent.putExtra(UpdateBalActivity.INTENT_EXTRA_CAMERA_LAT_LNG, mMap.getCameraPosition().target);
-                intent.putExtra(UpdateBalActivity.INTENT_EXTRA_MAP_TYPE, currentMapType);
-                startActivity(intent);
-            }
-        });
-        mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
-            @Override
-            public void onMapClick(LatLng latLng) {
-                shareMenuItem.setVisible(false);
-                deleteMenuItem.setVisible(false);
-                selectedBal = null;
-            }
-        });
-        mMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
-            @Override
-            public View getInfoWindow(Marker marker) {
-                return null;
-            }
 
             @Override
-            public View getInfoContents(Marker marker) {
-                LayoutInflater inflater = (LayoutInflater) MapActivity.this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-
-                View view = inflater.inflate(R.layout.marker_popup, null);
-                Bal bal = new Bal(marker.getTitle());
-                ((TextView) view.findViewById(android.R.id.text1)).setText(bal.getAddress1());
-                ((TextView) view.findViewById(android.R.id.text2)).setText(bal.getAddress2());
-
-                return view;
+            public boolean onZoom(ZoomEvent event) {
+                currentZoom = mapView.getZoomLevelDouble();
+                return false;
             }
-        });
-        mMap.setOnMyLocationChangeListener(new GoogleMap.OnMyLocationChangeListener() {
-            @Override
-            public void onMyLocationChange(Location location) {
-                if ((location != null) && waitingForMyLocation) {
-                    Log.d(TAG, "Device location updated");
-                    moveToMyLocation();
-                    waitingForMyLocation = false;
-                }
-            }
-        });
-        mMap.setOnMarkerDragListener(new GoogleMap.OnMarkerDragListener() {
-            public double oldLatitude;
-            public double oldLongitude;
+        }, DEFAULT_INACTIVITY_DELAY_IN_MILLISECS));
 
-            @Override
-            public void onMarkerDragStart(Marker marker) {
-                oldLatitude = marker.getPosition().latitude;
-                oldLongitude = marker.getPosition().longitude;
-                Log.d(TAG, "drag start : " + marker.getTitle());
-            }
-
-            @Override
-            public void onMarkerDrag(Marker marker) {
-
-            }
-
-            @Override
-            public void onMarkerDragEnd(final Marker marker) {
-
-                final double newLatitude = marker.getPosition().latitude;
-                final double newLongitude = marker.getPosition().longitude;
-                Log.d(TAG, "drag end : " + newLatitude + ", " + newLongitude);
-
-                Bal bal = new Bal(marker.getTitle());
-
-                // update mailbox location
-                marker.remove();
-                markerList.remove(bal.id);
-
-                // start activity to request an update
-                Intent intent = new Intent(MapActivity.this, UpdateBalActivity.class);
-                intent.putExtra(UpdateBalActivity.INTENT_EXTRA_BAL, bal);
-                intent.putExtra(UpdateBalActivity.INTENT_EXTRA_NEW_LOCATION, new LatLng(newLatitude, newLongitude));
-                intent.putExtra(UpdateBalActivity.INTENT_EXTRA_CAMERA_ZOOM, (int) mMap.getCameraPosition().zoom);
-                intent.putExtra(UpdateBalActivity.INTENT_EXTRA_CAMERA_LAT_LNG, mMap.getCameraPosition().target);
-                intent.putExtra(UpdateBalActivity.INTENT_EXTRA_MAP_TYPE, currentMapType);
-                startActivity(intent);
-            }
-        });
-    }
-
-    /**
-     * Create Google API instance
-     */
-    protected synchronized void buildGoogleApiClient() {
-        mGoogleApiClient = new GoogleApiClient.Builder(this)
-                .addConnectionCallbacks(this)
-                .addOnConnectionFailedListener(this)
-                .addApi(LocationServices.API)
-                .build();
-    }
-
-    /**
-     * update balList from current position
-     */
-    private void updateBalMarkers() {
-        updateBalMarkers(mMap.getCameraPosition().target.latitude, mMap.getCameraPosition().target.longitude);
+        // "my location" marker
+        myLocationMarker = new Marker(mapView);
+        myLocationMarker.setIcon(getResources().getDrawable(R.drawable.ic_current_position));
+        myLocationMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
+        myLocationMarker.setInfoWindow(null);
+        mapView.getOverlays().add(myLocationMarker);
     }
 
     /**
      * update bal list depending on the current map location
      *
-     * @param latitude
-     * @param longitude
+     * @param latitude  latitude for search
+     * @param longitude longitude for search
      */
     private void updateBalMarkers(final double latitude, final double longitude) {
 
@@ -671,130 +454,224 @@ public class MapActivity extends AppCompatActivity implements ConnectionCallback
         String url = getString(R.string.server_url) + "bal.php?latitude=" + latitude + "&longitude=" + longitude;
 
         // Request a string response from the provided URL.
-        currentBalListRequest = new StringRequest(Request.Method.GET, url,
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-                        // Bal list has been received
-                        Log.d(TAG, "Response received for : " + latitude + ", " + longitude);
-                        Map<String, Bal> balList = Bal.parseJsonBalList(response);
+        currentBalListRequest = new StringRequest(Request.Method.GET, url, (String response) -> {
+            // Bal list has been received
+            Log.d(TAG, "Response received for : " + latitude + ", " + longitude);
+            balList = Bal.parseJsonBalList(response);
 
-                        // add local bal
-                        for (Bal bal : Bal.getUserBalList(MapActivity.this)) {
-                            balList.put(bal.id, bal);
+            if (balList != null) {
+
+                // delete markers that should not be displayed
+                for (Map.Entry<String, Marker> pair : markerList.entrySet()) {
+                    String id = pair.getKey();
+                    Marker marker = pair.getValue();
+
+                    if (!balList.containsKey(id)) {
+                        Log.d(TAG, "removing " + id);
+                        mapView.getOverlays().remove(marker);
+                        if (selectedBalId.equals(marker.getId())) {
+                            marker.closeInfoWindow();
                         }
-
-                        if (balList != null) {
-
-                            // delete markers that should not be displayed
-                            Iterator<Map.Entry<String, Marker>> itMarker = markerList.entrySet().iterator();
-
-                            while (itMarker.hasNext()) {
-                                Map.Entry<String, Marker> pair = itMarker.next();
-                                String id = pair.getKey();
-                                Marker marker = pair.getValue();
-
-                                if (!balList.containsKey(id)) {
-                                    // Log.d(TAG, "removing " + id);
-                                    marker.remove();
-                                    markerList.remove(id);
-                                }
-                            }
-
-                            // add new markers from new list
-                            Iterator<Map.Entry<String, Bal>> itBal = balList.entrySet().iterator();
-
-                            while (itBal.hasNext()) {
-                                Map.Entry<String, Bal> pair = itBal.next();
-                                String id = pair.getKey();
-                                Bal bal = Bal.getBalWithLocalLocation(MapActivity.this, pair.getValue());
-
-                                if (!markerList.containsKey(id)) {
-
-                                    // Log.d(TAG, "adding " + id);
-                                    float iconColor = BitmapDescriptorFactory.HUE_YELLOW;
-                                    if (bal.isLocal()) {
-                                        iconColor = BitmapDescriptorFactory.HUE_ORANGE;
-                                    }
-                                    Marker marker = mMap.addMarker(new MarkerOptions()
-                                            .position(new LatLng(bal.latitude, bal.longitude))
-                                            .title(bal.toString())
-                                            .draggable(true)
-                                            .icon(BitmapDescriptorFactory.defaultMarker(iconColor)));
-                                    markerList.put(id, marker);
-
-                                    if ((selectedBal != null) && (id.equals(selectedBal.id))) {
-                                        marker.showInfoWindow();
-                                    }
-                                }
-                            }
-                        }
+                        markerList.remove(id);
                     }
-                }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                // error while retrieving bal list
-                Log.d(TAG, "Error receiving response for : " + latitude + ", " + longitude + " : " + error.getMessage());
-                error.printStackTrace();
-                Toast.makeText(MapActivity.this, R.string.error_retrieving_bal_list, Toast.LENGTH_LONG).show();
+                }
+
+                // add new markers from new list
+                for (Map.Entry<String, Bal> pair : balList.entrySet()) {
+                    String id = pair.getKey();
+                    Bal bal = pair.getValue();
+
+                    Marker marker;
+                    if (!markerList.containsKey(id)) {
+                        Log.d(TAG, "adding " + id);
+
+                        // create marker
+                        marker = new Marker(mapView);
+                        marker.setPosition(new GeoPoint(bal.latitude, bal.longitude));
+                        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
+                        marker.setIcon(getResources().getDrawable(R.drawable.ic_bal_marker));
+                        marker.setTextLabelFontSize(30);
+                        marker.setTitle(bal.getAddress1() + "\n" + bal.getAddress2());
+                        marker.setId(bal.id);
+                        marker.setInfoWindow(new MyInfoWindow(mapView));
+                        marker.setOnMarkerClickListener((Marker markerClicked, MapView mapView) -> {
+                            Log.d(TAG, "new selected bal : " + markerClicked.getId());
+                            selectedBalId = markerClicked.getId();
+                            markerClicked.showInfoWindow();
+                            moveToLocation(markerClicked.getPosition().getLatitude(), markerClicked.getPosition().getLongitude());
+                            return true;
+                        });
+                        mapView.getOverlays().add(marker);
+                        markerList.put(id, marker);
+
+                        if (selectedBalId.equals(marker.getId())) {
+                            Log.d(TAG, "selected bal found : " + selectedBalId);
+                            marker.showInfoWindow();
+                        }
+
+                    } else {
+                        Log.d(TAG, "not adding " + id);
+                    }
+
+                }
+
+                mapView.invalidate();
             }
+        }, (VolleyError error) -> {
+            // error while retrieving bal list
+            Log.d(TAG, "Error receiving response for : " + latitude + ", " + longitude + " : " + error.getMessage());
+            error.printStackTrace();
+            Toast.makeText(MapActivity.this, R.string.error_retrieving_bal_list, Toast.LENGTH_LONG).show();
+
         });
         // Add the request to the RequestQueue.
         queue.add(currentBalListRequest);
 
     }
 
-    @Override
-    public void onConnected(Bundle bundle) {
-
-        // change location to current device position only if no location has been choosen
-        moveToMyLocation();
-    }
-
-    /**
-     * Move camera to device location and update displayed bal
-     */
-    private void moveToMyLocation() {
-        if ((currentLatitude == Integer.MIN_VALUE) || (currentLongitude == Integer.MIN_VALUE)) {
-            Log.i(TAG, "searching for current device location");
-            Location location = LocationServices.FusedLocationApi.getLastLocation(
-                    mGoogleApiClient);
-            if (location != null) {
-                Log.d(TAG, "Device location found");
-                moveToLocation(location.getLatitude(), location.getLongitude());
-            } else {
-                Log.d(TAG, "Device location not found :(");
-                moveToLocation(PARIS_LATITUDE, PARIS_LONGITUDE);
-            }
-        }
-    }
-
     /**
      * Move camera to a location and update displayed bal
-     * @param latitude
-     * @param longitude
+     *
+     * @param latitude  latitude to move to
+     * @param longitude longitude to move to
      */
     private void moveToLocation(double latitude, double longitude) {
-        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(latitude, longitude), 15));
+        mapController.animateTo(new GeoPoint(latitude, longitude));
         updateBalMarkers(latitude, longitude);
-    }
-
-    @Override
-    public void onConnectionSuspended(int i) {
-        Log.i(TAG, "Location services connection suspended.");
-    }
-
-    @Override
-    public void onConnectionFailed(ConnectionResult connectionResult) {
-        Log.i(TAG, "Location services connection failed.");
     }
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        outState.putParcelable("selectedBal", selectedBal);
-        outState.putDouble("currentLatitude", mMap.getCameraPosition().target.latitude);
-        outState.putDouble("currentLongitude", mMap.getCameraPosition().target.longitude);
-        outState.putInt("currentMapType", currentMapType);
+        outState.putString("selectedBalId", selectedBalId);
+        outState.putDouble("currentLatitude", currentLatitude);
+        outState.putDouble("currentLongitude", currentLongitude);
+        outState.putParcelable("currentDeviceLocation", currentDeviceLocation);
+        outState.putDouble("currentZoom", currentZoom);
+        outState.putBoolean("shouldAppMoveCameraPosition", shouldAppMoveCameraPosition);
+    }
+
+    /**
+     * Custom {@link InfoWindow} view
+     */
+    private class MyInfoWindow extends InfoWindow {
+
+        /**
+         * Text displaying address
+         */
+        private final TextView textView;
+
+        /**
+         * Button to navigate to this mailbox
+         */
+        private final ImageView navigateImage;
+
+        /**
+         * Button to share mailbox
+         */
+        private final ImageView shareImage;
+
+        MyInfoWindow(MapView mapView) {
+            super(R.layout.marker_popup, mapView);
+
+            textView = mView.findViewById(R.id.text);
+            navigateImage = mView.findViewById(R.id.navigate);
+            shareImage = mView.findViewById(R.id.share);
+        }
+
+        @Override
+        public void onOpen(Object item) {
+            // close every opened InfoWindow (only one can be opened)
+            closeAllInfoWindowsOn(getMapView());
+
+            if (item instanceof Marker) {
+                Marker marker = (Marker) item;
+                Log.d(TAG, "Displaying InfoWindow of " + marker.getId());
+
+                textView.setText(marker.getTitle());
+                navigateImage.setOnClickListener((View v) -> {
+                    Log.d(TAG, "Route to this marker requested");
+                    startNavigation(marker.getPosition().getLatitude(), marker.getPosition().getLongitude());
+                });
+                shareImage.setOnClickListener((View v) -> {
+                    Log.d(TAG, "Sharing of this marker requested");
+                    shareBal(balList.get(marker.getId()));
+                });
+            } else {
+                Log.e(TAG, "No marker found (should not happen)");
+            }
+        }
+
+        @Override
+        public void onClose() {
+
+        }
+    }
+
+    /**
+     * Star navigation to the desired mailbox
+     *
+     * @param latitude  mailbox latitude
+     * @param longitude mailbox longitude
+     */
+    private void startNavigation(double latitude, double longitude) {
+        Uri gmmIntentUri = Uri.parse("google.navigation:q=" + String.valueOf(latitude) + "," + String.valueOf(longitude));
+        Log.d(TAG, gmmIntentUri.toString());
+        Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
+        mapIntent.setPackage("com.google.android.apps.maps");
+        if (mapIntent.resolveActivity(getPackageManager()) != null) {
+            startActivity(mapIntent);
+        }
+    }
+
+    /**
+     * Share a {@link Bal} with other applications
+     *
+     * @param bal selected bal to be shared
+     */
+    private void shareBal(Bal bal) {
+        if (bal != null) {
+            String uri = "http://maps.google.com/maps?q=" + bal.latitude + "," + bal.longitude;
+
+            Intent sharingIntent = new Intent(android.content.Intent.ACTION_SEND);
+            sharingIntent.setType("text/plain");
+            String ShareSub = getString(R.string.mailbox) + " - " + bal.getCompleteAddress();
+            sharingIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, ShareSub);
+            sharingIntent.putExtra(android.content.Intent.EXTRA_TEXT, uri);
+            startActivity(Intent.createChooser(sharingIntent, getString(R.string.share_via)));
+        } else {
+            Log.e(TAG, "No bal found for sharing (should not happen)");
+        }
+    }
+
+    /**
+     * {@link DialogFragment} offering map type choice to user
+     */
+    public static class MapTypeDialogFragment extends DialogFragment {
+
+        @Override
+        @NonNull
+        public Dialog onCreateDialog(Bundle savedInstanceState) {
+            // Use the Builder class for convenient dialog construction
+            Log.d(TAG, "Creating dialog to choose map type");
+
+            if (getActivity() instanceof MapActivity) {
+                MapActivity activity = (MapActivity) getActivity();
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+                builder.setTitle(R.string.map_type)
+                        .setSingleChoiceItems(R.array.map_type_list, Tools.getCurrentMapType(), (DialogInterface dialog, int which) -> {
+                            Log.d(TAG, "User selected " + which);
+                            Tools.setCurrentMapType(which);
+                            activity.updateMapStyle();
+                            dismiss();
+                        });
+                // Create the AlertDialog object and return it
+                return builder.create();
+            } else {
+                Log.e(TAG, "No MapActivity found (should not happen)");
+                return null;
+            }
+        }
     }
 }
