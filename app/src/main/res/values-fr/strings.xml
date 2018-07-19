@@ -10,4 +10,5 @@
     <string name="share_via">Partager via</string>
     <string name="mailbox">Boîte aux lettres</string>
     <string name="map_type">Type de carte</string>
+    <string name="permission_not_granted_message">Merci d\'accepter les permissions pour utiliser "Boîtes aux lettres".</string>
 </resources>

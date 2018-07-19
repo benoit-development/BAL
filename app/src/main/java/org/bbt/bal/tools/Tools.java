@@ -42,7 +42,7 @@ public class Tools {
     /**
      * {@link SharedPreferences} instance to store data
      */
-    private static SharedPreferences sharedPref = BALApplication.applicationInstance.getSharedPreferences(BALApplication.applicationInstance.getPackageName(), BALApplication.MODE_PRIVATE);
+    private static final SharedPreferences sharedPref = BALApplication.applicationInstance.getSharedPreferences(BALApplication.applicationInstance.getPackageName(), BALApplication.MODE_PRIVATE);
 
     /**
      * get map type selected by user in {@link android.content.SharedPreferences}
@@ -78,7 +78,7 @@ public class Tools {
 
         //setup mapbox key and id
         if (tileSource instanceof MapBoxTileSource) {
-            ((MapBoxTileSource) tileSource).setAccessToken(BALApplication.applicationInstance.getString(R.string.mapbbox_key));
+            ((MapBoxTileSource) tileSource).setAccessToken(BALApplication.applicationInstance.getString(R.string.mapbox_key));
             ((MapBoxTileSource) tileSource).setMapboxMapid(BALApplication.applicationInstance.getString(R.string.mapbox_id));
         }
 

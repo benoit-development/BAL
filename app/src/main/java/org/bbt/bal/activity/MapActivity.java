@@ -144,7 +144,7 @@ public class MapActivity extends AppCompatActivity {
     /**
      * Marker list on map
      */
-    private ConcurrentHashMap<String, Marker> markerList = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Marker> markerList = new ConcurrentHashMap<>();
 
     /**
      * Current bal list identified with bal ID
@@ -185,7 +185,7 @@ public class MapActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (checkPermission() && (mapView != null)) {
+        if (mapView != null) {
             mapView.onResume();
             markerList.clear();
             moveToMyLocation(false);
@@ -256,12 +256,23 @@ public class MapActivity extends AppCompatActivity {
 
             Log.d(TAG, "Location permission not granted");
 
-            // No explanation needed, we can request the permission.
-            Log.d(TAG, "Asking for permission");
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                    MY_PERMISSIONS_REQUEST);
-
+            // Permission is not granted
+            // Should we show an explanation?
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION) ||
+                    ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                // Show an explanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+                Log.d(TAG, "Can't rationally ask for permissions");
+                Toast.makeText(this, R.string.permission_not_granted_message, Toast.LENGTH_SHORT).show();
+                finish();
+            } else {
+                // No explanation needed, we can request the permission.
+                Log.d(TAG, "Asking for permission");
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                        MY_PERMISSIONS_REQUEST);
+            }
             return false;
 
         } else {
@@ -328,7 +339,8 @@ public class MapActivity extends AppCompatActivity {
                     // permission denied, boo! Disable the
                     // functionality that depends on this permission.
                     Log.d(TAG, "Permission not granted :(");
-                    checkPermission();
+                    Toast.makeText(this, R.string.permission_not_granted_message, Toast.LENGTH_SHORT).show();
+                    finish();
                 }
             }
         }
@@ -343,16 +355,17 @@ public class MapActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-            case R.id.action_map_layer:
+            case R.id.action_my_location:
+                Log.d(TAG, "My Location requested");
+                moveToMyLocation(true);
+                return true;
+            // activate this menu item when osmdroid will have satellite map in France
+            case 58:
                 Log.d(TAG, "Display AlertDialog to choose map type");
 
                 DialogFragment newFragment = new MapTypeDialogFragment();
                 newFragment.show(getSupportFragmentManager(), "missiles");
 
-                return true;
-            case R.id.action_my_location:
-                Log.d(TAG, "My Location requested");
-                moveToMyLocation(true);
                 return true;
             default:
                 return super.onOptionsItemSelected(item);

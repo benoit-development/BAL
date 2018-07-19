@@ -10,4 +10,5 @@
     <string name="share_via">Share via</string>
     <string name="mailbox">Mailbox</string>
     <string name="map_type">Map type</string>
+    <string name="permission_not_granted_message">Please accept these permissions to use "Mailboxes in France".</string>
 </resources>

@@ -54,12 +54,12 @@ public class Bal implements Parcelable {
     /**
      * latitude
      */
-    public double latitude;
+    public final double latitude;
 
     /**
      * longitude
      */
-    public double longitude;
+    public final double longitude;
 
     /**
      * Country code
@@ -69,7 +69,7 @@ public class Bal implements Parcelable {
     /**
      * order
      */
-    private int order;
+    private final int order;
 
     public int describeContents() {
         return 0;

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="mapbbox_key">pk.eyJ1IjoiZ3V5YnJ1c2gxNyIsImEiOiJjamkzOXdxZm0wcGh6M3FudGppNG4xM2MzIn0.-ocT3UJAnzd_looqw4XLUg</string>
-    <string name="mapbox_id">mapbox://styles/guybrush17/cjjqspxyp0vdg2smu80owuoe1</string>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="mapbox_key" tools:ignore="MissingTranslation">pk.eyJ1IjoiZ3V5YnJ1c2gxNyIsImEiOiJjamkzOXdxZm0wcGh6M3FudGppNG4xM2MzIn0.-ocT3UJAnzd_looqw4XLUg</string>
+    <string name="mapbox_id" tools:ignore="MissingTranslation">mapbox://styles/guybrush17/cjjqspxyp0vdg2smu80owuoe1</string>
 </resources>
