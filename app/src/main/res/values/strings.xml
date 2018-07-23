@@ -6,9 +6,9 @@
     <string name="my_location">My Location</string>
     <string name="route">Route</string>
     <string name="satellite">Satellite</string>
-    <string name="street">Street</string>
     <string name="share_via">Share via</string>
     <string name="mailbox">Mailbox</string>
     <string name="map_type">Map type</string>
     <string name="permission_not_granted_message">Please accept these permissions to use "Mailboxes in France".</string>
+    <string name="road">Roads</string>
 </resources>

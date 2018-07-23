@@ -4,10 +4,11 @@ import android.content.SharedPreferences;
 import android.util.Log;
 
 import org.bbt.bal.BALApplication;
-import org.bbt.bal.R;
 import org.osmdroid.tileprovider.tilesource.ITileSource;
-import org.osmdroid.tileprovider.tilesource.MapBoxTileSource;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
+import org.osmdroid.tileprovider.tilesource.bing.BingMapTileSource;
+
+import java.util.Locale;
 
 /**
  * Class grouping useful technical methods
@@ -35,14 +36,22 @@ public class Tools {
      */
     private static final ITileSource[] mapTypeList = new ITileSource[]{
             TileSourceFactory.MAPNIK,
-            new MapBoxTileSource(),
-            TileSourceFactory.USGS_TOPO
+            null
     };
 
     /**
      * {@link SharedPreferences} instance to store data
      */
     private static final SharedPreferences sharedPref = BALApplication.applicationInstance.getSharedPreferences(BALApplication.applicationInstance.getPackageName(), BALApplication.MODE_PRIVATE);
+
+    static {
+        // Setup Bing Map Style
+        BingMapTileSource.retrieveBingKey(BALApplication.applicationInstance);
+        String m_locale = Locale.getDefault().getDisplayName();
+        BingMapTileSource bing = new BingMapTileSource(m_locale);
+        bing.setStyle(BingMapTileSource.IMAGERYSET_AERIALWITHLABELS);
+        mapTypeList[1] = bing;
+    }
 
     /**
      * get map type selected by user in {@link android.content.SharedPreferences}
@@ -73,15 +82,6 @@ public class Tools {
      * @return current selected map type {@link ITileSource}
      */
     public static ITileSource getCurrentMapTypeTileSource() {
-
-        ITileSource tileSource = mapTypeList[getCurrentMapType()];
-
-        //setup mapbox key and id
-        if (tileSource instanceof MapBoxTileSource) {
-            ((MapBoxTileSource) tileSource).setAccessToken(BALApplication.applicationInstance.getString(R.string.mapbox_key));
-            ((MapBoxTileSource) tileSource).setMapboxMapid(BALApplication.applicationInstance.getString(R.string.mapbox_id));
-        }
-
-        return tileSource;
+        return mapTypeList[getCurrentMapType()];
     }
 }

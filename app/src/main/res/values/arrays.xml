@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string-array name="map_type_list">
-        <item>@string/street</item>
+        <item>@string/road</item>
         <item>@string/satellite</item>
-        <item>@string/topo</item>
     </string-array>
 </resources>

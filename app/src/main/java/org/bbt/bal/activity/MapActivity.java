@@ -79,7 +79,7 @@ public class MapActivity extends AppCompatActivity {
     /**
      * Default zoom level
      */
-    private static final double DEFAULT_ZOOM = 14;
+    private static final double DEFAULT_ZOOM = 15;
 
     /**
      * Instance of an AsyncTask updating
@@ -360,7 +360,7 @@ public class MapActivity extends AppCompatActivity {
                 moveToMyLocation(true);
                 return true;
             // activate this menu item when osmdroid will have satellite map in France
-            case 58:
+            case R.id.action_map_layer:
                 Log.d(TAG, "Display AlertDialog to choose map type");
 
                 DialogFragment newFragment = new MapTypeDialogFragment();
@@ -441,7 +441,7 @@ public class MapActivity extends AppCompatActivity {
 
         // "my location" marker
         myLocationMarker = new Marker(mapView);
-        myLocationMarker.setIcon(getResources().getDrawable(R.drawable.ic_current_position));
+        myLocationMarker.setIcon(getDrawable(R.drawable.ic_marker_my_location));
         myLocationMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
         myLocationMarker.setInfoWindow(null);
         mapView.getOverlays().add(myLocationMarker);
@@ -501,8 +501,8 @@ public class MapActivity extends AppCompatActivity {
                         // create marker
                         marker = new Marker(mapView);
                         marker.setPosition(new GeoPoint(bal.latitude, bal.longitude));
-                        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
-                        marker.setIcon(getResources().getDrawable(R.drawable.ic_bal_marker));
+                        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+                        marker.setIcon(getDrawable(R.drawable.ic_marker_bal_location));
                         marker.setTextLabelFontSize(30);
                         marker.setTitle(bal.getAddress1() + "\n" + bal.getAddress2());
                         marker.setId(bal.id);

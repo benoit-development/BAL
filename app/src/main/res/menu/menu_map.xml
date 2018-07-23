@@ -9,10 +9,10 @@
         android:title="@string/my_location"
         app:showAsAction="ifRoom" />
 
-    <!--<item-->
-        <!--android:id="@+id/action_map_layer"-->
-        <!--android:icon="@drawable/ic_action_map_layers"-->
-        <!--android:title="@string/map_type"-->
-        <!--app:showAsAction="ifRoom" />-->
+    <item
+        android:id="@+id/action_map_layer"
+        android:icon="@drawable/ic_action_map_layers"
+        android:title="@string/map_type"
+        app:showAsAction="ifRoom" />
 
 </menu>
