@@ -164,6 +164,14 @@ public class MapActivity extends AppCompatActivity {
             currentDeviceLocation = savedInstanceState.getParcelable("currentDeviceLocation");
             currentZoom = savedInstanceState.getDouble("currentZoom", DEFAULT_ZOOM);
             shouldAppMoveCameraPosition = savedInstanceState.getBoolean("shouldAppMoveCameraPosition", true);
+
+            Log.d(TAG, "[Saved instance] : ");
+            Log.d(TAG, "selectedBalId : " + selectedBalId);
+            Log.d(TAG, "currentLatitude : " + currentLatitude);
+            Log.d(TAG, "currentLongitude : " + currentLongitude);
+            Log.d(TAG, "currentDeviceLocation : " + currentDeviceLocation);
+            Log.d(TAG, "currentZoom : " + currentZoom);
+            Log.d(TAG, "shouldAppMoveCameraPosition : " + shouldAppMoveCameraPosition);
         }
 
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
@@ -423,6 +431,7 @@ public class MapActivity extends AppCompatActivity {
 
                 currentLatitude = mapView.getMapCenter().getLatitude();
                 currentLongitude = mapView.getMapCenter().getLongitude();
+                currentZoom = mapView.getZoomLevelDouble();
 
                 Log.d(TAG, "Map position moved to : " + currentLatitude + "/" + currentLongitude);
                 if ((currentLatitude != previousLatitude) && (currentLongitude != previousLongitude)) {
