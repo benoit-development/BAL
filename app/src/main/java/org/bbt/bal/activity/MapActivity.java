@@ -452,7 +452,7 @@ public class MapActivity extends AppCompatActivity {
         // "my location" marker
         myLocationMarker = new Marker(mapView);
         myLocationMarker.setIcon(getDrawable(R.drawable.ic_marker_my_location));
-        myLocationMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
+        myLocationMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
         myLocationMarker.setInfoWindow(null);
         mapView.getOverlays().add(myLocationMarker);
     }
