@@ -5,3 +5,5 @@
 .DS_Store
 /build
 /captures
+/app/src/debug/res/values/values.xml
+/app/src/release/res/values/values.xml

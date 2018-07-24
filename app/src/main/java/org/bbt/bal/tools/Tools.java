@@ -44,6 +44,9 @@ public class Tools {
      */
     private static final SharedPreferences sharedPref = BALApplication.applicationInstance.getSharedPreferences(BALApplication.applicationInstance.getPackageName(), BALApplication.MODE_PRIVATE);
 
+    /*
+     * Init static fields of {@link Tools} class
+     */
     static {
         // Setup Bing Map Style
         BingMapTileSource.retrieveBingKey(BALApplication.applicationInstance);

@@ -1,12 +1,13 @@
 package org.bbt.bal.activity;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -670,19 +671,38 @@ public class MapActivity extends AppCompatActivity {
 
             if (getActivity() instanceof MapActivity) {
                 MapActivity activity = (MapActivity) getActivity();
-
                 AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+
+                @SuppressLint("InflateParams") View view = getActivity().getLayoutInflater().inflate(R.layout.map_type_custom_dialog, null);
+                View roadImage = view.findViewById(R.id.road_image);
+                View satelliteImage = view.findViewById(R.id.satellite_image);
+
+                //set actions
+                roadImage.setOnClickListener((View v) -> {
+                    Tools.setCurrentMapType(0);
+                    activity.updateMapStyle();
+                    dismiss();
+                });
+                satelliteImage.setOnClickListener((View v) -> {
+                    Tools.setCurrentMapType(1);
+                    activity.updateMapStyle();
+                    dismiss();
+                });
+                if (Tools.getCurrentMapType() == 0) {
+                    // road currently selected
+                    satelliteImage.setBackgroundColor(Color.TRANSPARENT);
+                } else {
+                    // satellite currently selected
+                    roadImage.setBackgroundColor(Color.TRANSPARENT);
+                }
+
                 builder.setTitle(R.string.map_type)
-                        .setSingleChoiceItems(R.array.map_type_list, Tools.getCurrentMapType(), (DialogInterface dialog, int which) -> {
-                            Log.d(TAG, "User selected " + which);
-                            Tools.setCurrentMapType(which);
-                            activity.updateMapStyle();
-                            dismiss();
-                        });
+                        .setView(view);
                 // Create the AlertDialog object and return it
                 return builder.create();
             } else {
                 Log.e(TAG, "No MapActivity found (should not happen)");
+                //noinspection ConstantConditions
                 return null;
             }
         }
