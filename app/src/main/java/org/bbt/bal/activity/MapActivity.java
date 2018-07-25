@@ -328,6 +328,7 @@ public class MapActivity extends AppCompatActivity {
         }
         // Register the listener with the Location Manager to receive location update
         locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListener);
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
     }
 
     @Override
