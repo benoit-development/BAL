@@ -452,6 +452,7 @@ public class MapActivity extends AppCompatActivity {
                     previousLatitude = currentLatitude;
                     previousLongitude = currentLongitude;
                     updateBalMarkers(currentLatitude, currentLongitude);
+                    mapView.invalidate();
                 }
                 return false;
             }
