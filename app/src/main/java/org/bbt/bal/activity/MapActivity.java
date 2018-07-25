@@ -609,7 +609,7 @@ public class MapActivity extends AppCompatActivity {
         private final ImageView shareImage;
 
         MyInfoWindow(MapView mapView) {
-            super(R.layout.marker_popup, mapView);
+            super(R.layout.marker_tooltip, mapView);
 
             textView = mView.findViewById(R.id.text);
             navigateImage = mView.findViewById(R.id.navigate);
