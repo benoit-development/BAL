@@ -152,6 +152,16 @@ public class MapActivity extends AppCompatActivity {
      */
     private Map<String, Bal> balList;
 
+    /**
+     * Listener for the device location
+     */
+    private LocationListener locationListener;
+
+    /**
+     * Location manager to get current device location
+     */
+    private LocationManager locationManager;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -188,6 +198,9 @@ public class MapActivity extends AppCompatActivity {
 
         if (mapView != null) {
             mapView.onPause();
+        }
+        if ((locationListener != null) && (locationManager != null)) {
+            locationManager.removeUpdates(locationListener);
         }
     }
 
@@ -297,14 +310,14 @@ public class MapActivity extends AppCompatActivity {
      */
     private void locationPermissionGranted() {
         // Acquire a reference to the system Location Manager
-        LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+        locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         if (locationManager == null) {
             Log.d(TAG, "Location Manager is null. No possibility to find device location");
             return;
         }
 
         // Define a listener that responds to location updates
-        LocationListener locationListener = new LocationListener() {
+        locationListener = new LocationListener() {
             public void onLocationChanged(Location location) {
                 // Called when a new location is found by the network location provider.
                 Log.d(TAG, "Device location changed : " + location.getLatitude() + "/" + location.getLongitude());
