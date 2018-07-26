@@ -83,6 +83,16 @@ public class MapActivity extends AppCompatActivity {
     private static final double DEFAULT_ZOOM = 15;
 
     /**
+     * Minimum distance update for device location (meters)
+     */
+    private static final float MIN_DISTANCE_UPDATE = 5;
+
+    /**
+     * Minimum distance update for device location (ms)
+     */
+    private static final long MIN_TIME_UPDATE = 2000;
+
+    /**
      * Instance of an AsyncTask updating
      */
     private StringRequest currentBalListRequest = null;
@@ -185,11 +195,6 @@ public class MapActivity extends AppCompatActivity {
         }
 
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
-
-        //handle permissions first, before map is created. not depicted here
-        if (checkPermission()) {
-            setUpMap();
-        }
     }
 
     @Override
@@ -207,6 +212,13 @@ public class MapActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+
+        //handle permissions first, before map is created. not depicted here
+        if (checkPermission()) {
+            setUpMap();
+        }
+
+        // init map if everything is ok
         if (mapView != null) {
             mapView.onResume();
             markerList.clear();
@@ -340,8 +352,8 @@ public class MapActivity extends AppCompatActivity {
             return;
         }
         // Register the listener with the Location Manager to receive location update
-        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListener);
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
+        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, MIN_TIME_UPDATE, MIN_DISTANCE_UPDATE, locationListener);
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, MIN_TIME_UPDATE, MIN_DISTANCE_UPDATE, locationListener);
     }
 
     @Override
