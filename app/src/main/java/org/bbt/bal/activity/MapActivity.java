@@ -185,13 +185,13 @@ public class MapActivity extends AppCompatActivity {
             currentZoom = savedInstanceState.getDouble("currentZoom", DEFAULT_ZOOM);
             shouldAppMoveCameraPosition = savedInstanceState.getBoolean("shouldAppMoveCameraPosition", true);
 
-            Log.d(TAG, "[Saved instance] : ");
-            Log.d(TAG, "selectedBalId : " + selectedBalId);
-            Log.d(TAG, "currentLatitude : " + currentLatitude);
-            Log.d(TAG, "currentLongitude : " + currentLongitude);
-            Log.d(TAG, "currentDeviceLocation : " + currentDeviceLocation);
-            Log.d(TAG, "currentZoom : " + currentZoom);
-            Log.d(TAG, "shouldAppMoveCameraPosition : " + shouldAppMoveCameraPosition);
+            Log.i(TAG, "[Saved instance] : ");
+            Log.i(TAG, "selectedBalId : " + selectedBalId);
+            Log.i(TAG, "currentLatitude : " + currentLatitude);
+            Log.i(TAG, "currentLongitude : " + currentLongitude);
+            Log.i(TAG, "currentDeviceLocation : " + currentDeviceLocation);
+            Log.i(TAG, "currentZoom : " + currentZoom);
+            Log.i(TAG, "shouldAppMoveCameraPosition : " + shouldAppMoveCameraPosition);
         }
 
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
@@ -240,7 +240,7 @@ public class MapActivity extends AppCompatActivity {
     private void moveToMyLocation(boolean force) {
 
         if ((currentDeviceLocation != null) && (mapView != null)) {
-            Log.d(TAG, "current device location available");
+            Log.i(TAG, "current device location available");
 
             if (shouldAppMoveCameraPosition || force) {
                 moveToLocation(currentDeviceLocation.getLatitude(), currentDeviceLocation.getLongitude());
@@ -248,7 +248,7 @@ public class MapActivity extends AppCompatActivity {
             }
 
         } else if (mapView != null) {
-            Log.d(TAG, "No current device location available. Trying to get one from last known location");
+            Log.i(TAG, "No current device location available. Trying to get one from last known location");
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 checkPermission();
                 return;
@@ -257,7 +257,8 @@ public class MapActivity extends AppCompatActivity {
                     .addOnSuccessListener(this, (Location location) -> {
                         // Got last known location. In some rare situations this can be null.
                         if (location != null) {
-                            Log.d(TAG, "Last known location found : " + location.getLatitude() + ", " + location.getLongitude());
+                            Log.i(TAG, "Last known location found");
+                            Log.d(TAG, location.getLatitude() + ", " + location.getLongitude());
                             updateCurrentPositionMarker(location);
                             if (shouldAppMoveCameraPosition || force) {
                                 moveToMyLocation(false);
@@ -288,7 +289,7 @@ public class MapActivity extends AppCompatActivity {
         if ((ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
                 || (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)) {
 
-            Log.d(TAG, "Location permission not granted");
+            Log.w(TAG, "Permissions not granted");
 
             // Permission is not granted
             // Should we show an explanation?
@@ -297,12 +298,12 @@ public class MapActivity extends AppCompatActivity {
                 // Show an explanation to the user *asynchronously* -- don't block
                 // this thread waiting for the user's response! After the user
                 // sees the explanation, try again to request the permission.
-                Log.d(TAG, "Can't rationally ask for permissions");
+                Log.w(TAG, "Can't rationally ask for permissions");
                 Toast.makeText(this, R.string.permission_not_granted_message, Toast.LENGTH_SHORT).show();
                 finish();
             } else {
                 // No explanation needed, we can request the permission.
-                Log.d(TAG, "Asking for permission");
+                Log.i(TAG, "Asking for permissions");
                 ActivityCompat.requestPermissions(this,
                         new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.WRITE_EXTERNAL_STORAGE},
                         MY_PERMISSIONS_REQUEST);
@@ -310,6 +311,7 @@ public class MapActivity extends AppCompatActivity {
             return false;
 
         } else {
+            Log.i(TAG, "Permissions granted");
             // Permission granted
             locationPermissionGranted();
             setUpMap();
@@ -324,7 +326,7 @@ public class MapActivity extends AppCompatActivity {
         // Acquire a reference to the system Location Manager
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         if (locationManager == null) {
-            Log.d(TAG, "Location Manager is null. No possibility to find device location");
+            Log.w(TAG, "Location Manager is null. No possibility to find device location");
             return;
         }
 
@@ -332,7 +334,8 @@ public class MapActivity extends AppCompatActivity {
         locationListener = new LocationListener() {
             public void onLocationChanged(Location location) {
                 // Called when a new location is found by the network location provider.
-                Log.d(TAG, "Device location changed : " + location.getLatitude() + "/" + location.getLongitude());
+                Log.i(TAG, "Device location changed");
+                Log.d(TAG, location.getLatitude() + "/" + location.getLongitude());
                 moveToMyLocation(false);
                 updateCurrentPositionMarker(location);
             }
@@ -365,7 +368,7 @@ public class MapActivity extends AppCompatActivity {
 
                     // permission was granted, yay! Do the
                     // go to current device location
-                    Log.d(TAG, "Permission has been granted");
+                    Log.i(TAG, "Permissions has been granted");
                     setUpMap();
                     locationPermissionGranted();
 
@@ -373,7 +376,7 @@ public class MapActivity extends AppCompatActivity {
 
                     // permission denied, boo! Disable the
                     // functionality that depends on this permission.
-                    Log.d(TAG, "Permission not granted :(");
+                    Log.i(TAG, "Permission not granted :(");
                     Toast.makeText(this, R.string.permission_not_granted_message, Toast.LENGTH_SHORT).show();
                     finish();
                 }
@@ -391,16 +394,13 @@ public class MapActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_my_location:
-                Log.d(TAG, "My Location requested");
+                Log.i(TAG, "My Location requested");
                 moveToMyLocation(true);
                 return true;
-            // activate this menu item when osmdroid will have satellite map in France
             case R.id.action_map_layer:
-                Log.d(TAG, "Display AlertDialog to choose map type");
-
+                Log.i(TAG, "Display AlertDialog to choose map type");
                 DialogFragment newFragment = new MapTypeDialogFragment();
                 newFragment.show(getSupportFragmentManager(), "missiles");
-
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -459,7 +459,8 @@ public class MapActivity extends AppCompatActivity {
                 currentLongitude = mapView.getMapCenter().getLongitude();
                 currentZoom = mapView.getZoomLevelDouble();
 
-                Log.d(TAG, "Map position moved to : " + currentLatitude + "/" + currentLongitude);
+                Log.i(TAG, "Map position moved");
+                Log.d(TAG, currentLatitude + "/" + currentLongitude);
                 if ((currentLatitude != previousLatitude) && (currentLongitude != previousLongitude)) {
                     previousLatitude = currentLatitude;
                     previousLongitude = currentLongitude;
@@ -471,6 +472,7 @@ public class MapActivity extends AppCompatActivity {
 
             @Override
             public boolean onZoom(ZoomEvent event) {
+                Log.i(TAG, "Zoom changed");
                 currentZoom = mapView.getZoomLevelDouble();
                 return false;
             }
@@ -492,7 +494,8 @@ public class MapActivity extends AppCompatActivity {
      */
     private void updateBalMarkers(final double latitude, final double longitude) {
 
-        Log.d(TAG, "Request for these coordinates : " + latitude + ", " + longitude);
+        Log.i(TAG, "Request for BAL");
+        Log.d(TAG, "coordinates : " + latitude + ", " + longitude);
 
         // check if a task is already running and stop it
         if (currentBalListRequest != null) {
@@ -517,7 +520,7 @@ public class MapActivity extends AppCompatActivity {
                     Marker marker = pair.getValue();
 
                     if (!balList.containsKey(id)) {
-                        Log.d(TAG, "removing " + id);
+                        Log.i(TAG, "removing " + id);
                         mapView.getOverlays().remove(marker);
                         if (selectedBalId.equals(marker.getId())) {
                             marker.closeInfoWindow();
@@ -533,7 +536,7 @@ public class MapActivity extends AppCompatActivity {
 
                     Marker marker;
                     if (!markerList.containsKey(id)) {
-                        Log.d(TAG, "adding " + id);
+                        Log.i(TAG, "adding " + id);
 
                         // create marker
                         marker = new Marker(mapView);
@@ -555,12 +558,12 @@ public class MapActivity extends AppCompatActivity {
                         markerList.put(id, marker);
 
                         if (selectedBalId.equals(marker.getId())) {
-                            Log.d(TAG, "selected bal found : " + selectedBalId);
+                            Log.i(TAG, "selected bal found : " + selectedBalId);
                             marker.showInfoWindow();
                         }
 
                     } else {
-                        Log.d(TAG, "not adding " + id);
+                        Log.i(TAG, "not adding " + id);
                     }
 
                 }
@@ -569,7 +572,7 @@ public class MapActivity extends AppCompatActivity {
             }
         }, (VolleyError error) -> {
             // error while retrieving bal list
-            Log.d(TAG, "Error receiving response for : " + latitude + ", " + longitude + " : " + error.getMessage());
+            Log.e(TAG, "Error receiving response : " + error.getMessage());
             error.printStackTrace();
             Toast.makeText(MapActivity.this, R.string.error_retrieving_bal_list, Toast.LENGTH_LONG).show();
 
@@ -636,15 +639,15 @@ public class MapActivity extends AppCompatActivity {
 
             if (item instanceof Marker) {
                 Marker marker = (Marker) item;
-                Log.d(TAG, "Displaying InfoWindow of " + marker.getId());
+                Log.i(TAG, "Displaying InfoWindow of " + marker.getId());
 
                 textView.setText(marker.getTitle());
                 navigateImage.setOnClickListener((View v) -> {
-                    Log.d(TAG, "Route to this marker requested");
+                    Log.i(TAG, "Route to this marker requested");
                     startNavigation(marker.getPosition().getLatitude(), marker.getPosition().getLongitude());
                 });
                 shareImage.setOnClickListener((View v) -> {
-                    Log.d(TAG, "Sharing of this marker requested");
+                    Log.i(TAG, "Sharing of this marker requested");
                     shareBal(balList.get(marker.getId()));
                 });
             } else {
@@ -703,7 +706,7 @@ public class MapActivity extends AppCompatActivity {
         @NonNull
         public Dialog onCreateDialog(Bundle savedInstanceState) {
             // Use the Builder class for convenient dialog construction
-            Log.d(TAG, "Creating dialog to choose map type");
+            Log.i(TAG, "Creating dialog to choose map type");
 
             if (getActivity() instanceof MapActivity) {
                 MapActivity activity = (MapActivity) getActivity();
@@ -715,11 +718,13 @@ public class MapActivity extends AppCompatActivity {
 
                 //set actions
                 roadImage.setOnClickListener((View v) -> {
+                    Log.i(TAG, "Displaying road map");
                     Tools.setCurrentMapType(0);
                     activity.updateMapStyle();
                     dismiss();
                 });
                 satelliteImage.setOnClickListener((View v) -> {
+                    Log.i(TAG, "Displaying satellite map");
                     Tools.setCurrentMapType(1);
                     activity.updateMapStyle();
                     dismiss();
