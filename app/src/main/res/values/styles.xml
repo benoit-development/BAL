@@ -8,4 +8,10 @@
     </style>
 
 
+    <style name="myButtonTheme" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="android:textColorPrimary">@android:color/darker_gray</item>
+        <item name="colorButtonNormal">#fff</item>
+    </style>
+
+
 </resources>

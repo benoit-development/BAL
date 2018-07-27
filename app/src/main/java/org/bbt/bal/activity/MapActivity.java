@@ -85,12 +85,12 @@ public class MapActivity extends AppCompatActivity {
     /**
      * Minimum distance update for device location (meters)
      */
-    private static final float MIN_DISTANCE_UPDATE = 5;
+    private static final float MIN_DISTANCE_UPDATE = 3;
 
     /**
      * Minimum distance update for device location (ms)
      */
-    private static final long MIN_TIME_UPDATE = 2000;
+    private static final long MIN_TIME_UPDATE = 1000;
 
     /**
      * Instance of an AsyncTask updating
@@ -278,6 +278,7 @@ public class MapActivity extends AppCompatActivity {
         currentDeviceLocation = location;
         if (myLocationMarker != null) {
             myLocationMarker.setPosition(new GeoPoint(currentDeviceLocation));
+            mapView.invalidate();
         }
     }
 
@@ -355,7 +356,6 @@ public class MapActivity extends AppCompatActivity {
             return;
         }
         // Register the listener with the Location Manager to receive location update
-        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, MIN_TIME_UPDATE, MIN_DISTANCE_UPDATE, locationListener);
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, MIN_TIME_UPDATE, MIN_DISTANCE_UPDATE, locationListener);
     }
 
@@ -484,6 +484,18 @@ public class MapActivity extends AppCompatActivity {
         myLocationMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
         myLocationMarker.setInfoWindow(null);
         mapView.getOverlays().add(myLocationMarker);
+
+        // zoom buttons
+        findViewById(R.id.zoom_plus_button).setOnClickListener((View v) -> {
+            if (mapController != null) {
+                mapController.zoomIn();
+            }
+        });
+        findViewById(R.id.zoom_minus_button).setOnClickListener((View v) -> {
+            if (mapController != null) {
+                mapController.zoomOut();
+            }
+        });
     }
 
     /**
